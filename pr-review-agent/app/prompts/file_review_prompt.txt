@@ -1,0 +1,45 @@
+Review the following pull request file change.
+
+Repository: {repository}
+PR Number: {pr_number}
+PR Title: {pr_title}
+Filename: {filename}
+Status: {status}
+Additions: {additions}
+Deletions: {deletions}
+
+Precheck findings for this file:
+{precheck_issues}
+
+Patch:
+{patch}
+
+Base content excerpt:
+{base_content}
+
+Head content excerpt:
+{head_content}
+
+Task:
+- Evaluate correctness, logic issues, regressions, security risks, edge cases, test gaps, and maintainability.
+- Keep output short and precise.
+- Do not speculate beyond provided evidence.
+
+Return JSON with exactly this schema:
+{{
+  "facts": ["string"],
+  "risks": ["string"],
+  "issues": [
+    {{
+      "severity": "low|medium|high",
+      "category": "correctness|logic|regression|security|edge_case|tests|maintainability|general",
+      "description": "string",
+      "recommendation": "string",
+      "evidence": "string",
+      "line": 0
+    }}
+  ],
+  "test_gaps": ["string"],
+  "maintainability_notes": ["string"],
+  "confidence": "low|medium|high"
+}}

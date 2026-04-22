@@ -1,0 +1,23 @@
+Synthesize a pull request level review using only the provided JSON context.
+
+Context:
+{context_json}
+
+Rules:
+- Use only evidence from context.
+- Keep output concise and implementation-focused.
+- Separate confirmed change summary from risk statements.
+- If context lacks business detail, say so explicitly.
+- Output valid JSON only.
+
+Return JSON with this schema:
+{{
+  "executive_summary": "string",
+  "summary_of_changes": ["string"],
+  "risk_level": "Low|Medium|High",
+  "behavior_changes": ["string"],
+  "business_functional_context": "string",
+  "scope_of_review": "string",
+  "final_decision": "Merge|Do Not Merge",
+  "reasoning": "string"
+}}

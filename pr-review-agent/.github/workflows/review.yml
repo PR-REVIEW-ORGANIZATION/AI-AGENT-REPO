@@ -1,0 +1,77 @@
+name: Reusable AI PR Review
+
+on:
+  workflow_call:
+    inputs:
+      repository:
+        description: Repository in owner/repo format
+        required: true
+        type: string
+      pr_number:
+        description: Pull request number
+        required: true
+        type: number
+      base_branch:
+        description: Base branch name
+        required: true
+        type: string
+      head_branch:
+        description: Head branch name
+        required: true
+        type: string
+      commit_sha:
+        description: Head commit SHA
+        required: true
+        type: string
+    secrets:
+      github_token:
+        required: true
+      OPENAI_API_KEY:
+        required: true
+      LLM_API_URL:
+        required: true
+      LLM_MODEL:
+        required: true
+
+jobs:
+  run-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout agent repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run PR review pipeline
+        env:
+          github_token: ${{ secrets.github_token }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_API_URL: ${{ secrets.LLM_API_URL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+        run: |
+          python app/main.py \
+            --repository "${{ inputs.repository }}" \
+            --pr-number "${{ inputs.pr_number }}" \
+            --base-branch "${{ inputs.base_branch }}" \
+            --head-branch "${{ inputs.head_branch }}" \
+            --commit-sha "${{ inputs.commit_sha }}"
+
+      - name: Upload PR review artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-review-${{ inputs.pr_number }}
+          path: |
+            outputs/Detailed_PR_Review_PR_${{ inputs.pr_number }}.docx
+            outputs/Detailed_PR_Review_PR_${{ inputs.pr_number }}.json
+          if-no-files-found: error
