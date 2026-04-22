@@ -35,7 +35,7 @@ on:
         default: main
     secrets:
       GH_TOKEN:
-        required: true
+        required: false
       OPENAI_API_KEY:
         required: true
       LLM_API_URL:
@@ -55,7 +55,7 @@ jobs:
         with:
           repository: ${{ inputs.agent_repository }}
           ref: ${{ inputs.agent_ref }}
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GH_TOKEN || github.token }}
           path: agent-repo
 
       - name: Setup Python
@@ -67,10 +67,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ -z "${{ secrets.GH_TOKEN }}" ]; then
-            echo "GH_TOKEN is empty. Pass it from caller workflow."
-            exit 1
-          fi
           if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
             echo "OPENAI_API_KEY is empty or missing in target repository secrets."
             exit 1
@@ -99,7 +95,7 @@ jobs:
       - name: Run PR review pipeline
         working-directory: agent-repo/pr-review-agent
         env:
-          github_token: ${{ secrets.GH_TOKEN }}
+          github_token: ${{ secrets.GH_TOKEN || github.token }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_API_URL: ${{ secrets.LLM_API_URL }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
