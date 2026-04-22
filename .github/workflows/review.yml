@@ -55,12 +55,40 @@ jobs:
         with:
           repository: ${{ inputs.agent_repository }}
           ref: ${{ inputs.agent_ref }}
+          token: ${{ secrets.GH_TOKEN }}
           path: agent-repo
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Preflight validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.GH_TOKEN }}" ]; then
+            echo "GH_TOKEN is empty. Pass it from caller workflow."
+            exit 1
+          fi
+          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
+            echo "OPENAI_API_KEY is empty or missing in target repository secrets."
+            exit 1
+          fi
+          if [ -z "${{ secrets.LLM_API_URL }}" ]; then
+            echo "LLM_API_URL is empty or missing in target repository secrets."
+            exit 1
+          fi
+          if [ -z "${{ secrets.LLM_MODEL }}" ]; then
+            echo "LLM_MODEL is empty or missing in target repository secrets."
+            exit 1
+          fi
+          if [ ! -d "agent-repo/pr-review-agent" ]; then
+            echo "Expected folder agent-repo/pr-review-agent was not found after checkout."
+            echo "Checked out repository: ${{ inputs.agent_repository }} @ ${{ inputs.agent_ref }}"
+            ls -la agent-repo || true
+            exit 1
+          fi
 
       - name: Install dependencies
         working-directory: agent-repo/pr-review-agent
