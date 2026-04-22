@@ -23,6 +23,16 @@ on:
         description: Head commit SHA
         required: true
         type: string
+      agent_repository:
+        description: Repository containing this reusable workflow and agent code
+        required: false
+        type: string
+        default: PR-REVIEW-ORGANIZATION/AI-AGENT-REPO
+      agent_ref:
+        description: Git ref for the agent repository checkout
+        required: false
+        type: string
+        default: main
     secrets:
       GH_TOKEN:
         required: true
@@ -40,22 +50,11 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - name: Resolve agent repository source
-        id: agent_source
-        shell: bash
-        run: |
-          set -euo pipefail
-          workflow_ref="${{ github.workflow_ref }}"
-          repo="${workflow_ref%%/.github/workflows/*}"
-          ref="${workflow_ref##*@}"
-          echo "repo=$repo" >> "$GITHUB_OUTPUT"
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"
-
       - name: Checkout agent repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ steps.agent_source.outputs.repo }}
-          ref: ${{ steps.agent_source.outputs.ref }}
+          repository: ${{ inputs.agent_repository }}
+          ref: ${{ inputs.agent_ref }}
           path: agent-repo
 
       - name: Setup Python

@@ -97,6 +97,7 @@ File: `.github/workflows/review.yml`
 
 This workflow uses `workflow_call` and requires:
 - Inputs: `repository`, `pr_number`, `base_branch`, `head_branch`, `commit_sha`
+- Optional inputs: `agent_repository`, `agent_ref` (used for checkout of agent source)
 - Secrets: `GH_TOKEN`, `OPENAI_API_KEY`, `LLM_API_URL`, `LLM_MODEL`
 
 The job installs dependencies, runs the pipeline, and uploads DOCX/JSON artifacts.
