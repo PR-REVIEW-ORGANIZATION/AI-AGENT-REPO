@@ -24,30 +24,31 @@ Key modules:
 ## Folder Structure
 
 ```text
-pr-review-agent/
+<agent-repo-root>/
   .github/
     workflows/
       review.yml
-  app/
-    main.py
-    config.py
-    models.py
-    github_api.py
-    prechecks.py
-    ai_review.py
-    synthesizer.py
-    doc_writer.py
-    prompts/
-      system_prompt.txt
-      file_review_prompt.txt
-      final_review_prompt.txt
-  tests/
-    test_models.py
-    test_prechecks.py
-    test_synthesizer.py
-  requirements.txt
-  README.md
-  .env.example
+  pr-review-agent/
+    app/
+      main.py
+      config.py
+      models.py
+      github_api.py
+      prechecks.py
+      ai_review.py
+      synthesizer.py
+      doc_writer.py
+      prompts/
+        system_prompt.txt
+        file_review_prompt.txt
+        final_review_prompt.txt
+    tests/
+      test_models.py
+      test_prechecks.py
+      test_synthesizer.py
+    requirements.txt
+    README.md
+    .env.example
 ```
 
 ## Environment Variables
@@ -92,7 +93,7 @@ Artifacts:
 
 ## Reusable Workflow (Agent Repository)
 
-File: `pr-review-agent/.github/workflows/review.yml`
+File: `.github/workflows/review.yml`
 
 This workflow uses `workflow_call` and requires:
 - Inputs: `repository`, `pr_number`, `base_branch`, `head_branch`, `commit_sha`
@@ -105,11 +106,8 @@ The job installs dependencies, runs the pipeline, and uploads DOCX/JSON artifact
 Place this file in the **target repository** at:
 - `.github/workflows/ai-pr-review.yml`
 
-The generated workflow for target repositories is available at:
-- `../.github/workflows/ai-pr-review.yml` (from this folder perspective)
-
 Connection steps:
-1. Push this `pr-review-agent` project to its own GitHub repo (for example `smahabooba001/pr-review-agent`).
+1. Push this agent repository (including `.github/workflows/review.yml`) to GitHub.
 2. In each target repo, add `.github/workflows/ai-pr-review.yml`.
 3. Ensure target repo secrets include:
    - `OPENAI_API_KEY`
