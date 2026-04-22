@@ -98,7 +98,8 @@ File: `.github/workflows/review.yml`
 This workflow uses `workflow_call` and requires:
 - Inputs: `repository`, `pr_number`, `base_branch`, `head_branch`, `commit_sha`
 - Optional inputs: `agent_repository`, `agent_ref` (used for checkout of agent source)
-- Secrets: `GH_TOKEN`, `OPENAI_API_KEY`, `LLM_API_URL`, `LLM_MODEL`
+- Secrets: `OPENAI_API_KEY`, `LLM_API_URL`, `LLM_MODEL`
+- Optional secret: `GH_TOKEN` (recommended PAT for private cross-repo checkout)
 
 The job installs dependencies, runs the pipeline, and uploads DOCX/JSON artifacts.
 
@@ -114,8 +115,38 @@ Connection steps:
    - `OPENAI_API_KEY`
    - `LLM_API_URL`
    - `LLM_MODEL`
-4. The target workflow passes `secrets.GITHUB_TOKEN` to reusable workflow as `GH_TOKEN` (the reusable workflow maps it to runtime env var `github_token`).
-5. Open/update PR in target repo; workflow will generate artifact files for that PR.
+4. Add optional `GH_TOKEN` secret in target repo if agent repo is private or cross-org (PAT with read access).
+5. Use this caller workflow:
+
+```yaml
+name: AI PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  review:
+    uses: PR-REVIEW-ORGANIZATION/AI-AGENT-REPO/.github/workflows/review.yml@main
+    permissions:
+      contents: read
+      pull-requests: read
+    with:
+      repository: ${{ github.repository }}
+      pr_number: ${{ github.event.pull_request.number }}
+      base_branch: ${{ github.event.pull_request.base.ref }}
+      head_branch: ${{ github.event.pull_request.head.ref }}
+      commit_sha: ${{ github.event.pull_request.head.sha }}
+      agent_repository: PR-REVIEW-ORGANIZATION/AI-AGENT-REPO
+      agent_ref: main
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LLM_API_URL: ${{ secrets.LLM_API_URL }}
+      LLM_MODEL: ${{ secrets.LLM_MODEL }}
+```
+
+6. Open/update PR in target repo; workflow will generate artifact files for that PR.
 
 ## Testing
 
