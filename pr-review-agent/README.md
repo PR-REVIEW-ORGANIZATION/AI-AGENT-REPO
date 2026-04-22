@@ -97,7 +97,7 @@ File: `.github/workflows/review.yml`
 
 This workflow uses `workflow_call` and requires:
 - Inputs: `repository`, `pr_number`, `base_branch`, `head_branch`, `commit_sha`
-- Secrets: `github_token`, `OPENAI_API_KEY`, `LLM_API_URL`, `LLM_MODEL`
+- Secrets: `GH_TOKEN`, `OPENAI_API_KEY`, `LLM_API_URL`, `LLM_MODEL`
 
 The job installs dependencies, runs the pipeline, and uploads DOCX/JSON artifacts.
 
@@ -113,7 +113,7 @@ Connection steps:
    - `OPENAI_API_KEY`
    - `LLM_API_URL`
    - `LLM_MODEL`
-4. The target workflow passes `secrets.GITHUB_TOKEN` to reusable workflow as `github_token`.
+4. The target workflow passes `secrets.GITHUB_TOKEN` to reusable workflow as `GH_TOKEN` (the reusable workflow maps it to runtime env var `github_token`).
 5. Open/update PR in target repo; workflow will generate artifact files for that PR.
 
 ## Testing

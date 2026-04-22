@@ -24,7 +24,7 @@ on:
         required: true
         type: string
     secrets:
-      github_token:
+      GH_TOKEN:
         required: true
       OPENAI_API_KEY:
         required: true
@@ -57,7 +57,7 @@ jobs:
       - name: Run PR review pipeline
         working-directory: pr-review-agent
         env:
-          github_token: ${{ secrets.github_token }}
+          github_token: ${{ secrets.GH_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_API_URL: ${{ secrets.LLM_API_URL }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
