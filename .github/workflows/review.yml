@@ -49,18 +49,20 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+    env:
+      GH_TOKEN_VALUE: ${{ secrets.GH_TOKEN }}
     steps:
       - name: Checkout agent repository (with GH_TOKEN)
-        if: ${{ secrets.GH_TOKEN != '' }}
+        if: ${{ env.GH_TOKEN_VALUE != '' }}
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.agent_repository }}
           ref: ${{ inputs.agent_ref }}
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ env.GH_TOKEN_VALUE }}
           path: agent-repo
 
       - name: Checkout agent repository (fallback token)
-        if: ${{ secrets.GH_TOKEN == '' }}
+        if: ${{ env.GH_TOKEN_VALUE == '' }}
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.agent_repository }}
@@ -104,7 +106,7 @@ jobs:
       - name: Run PR review pipeline
         working-directory: agent-repo/pr-review-agent
         env:
-          github_token: ${{ secrets.GH_TOKEN != '' && secrets.GH_TOKEN || github.token }}
+          github_token: ${{ env.GH_TOKEN_VALUE != '' && env.GH_TOKEN_VALUE || github.token }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_API_URL: ${{ secrets.LLM_API_URL }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
