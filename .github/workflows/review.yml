@@ -61,6 +61,14 @@ jobs:
           token: ${{ secrets.repo_token }}
           path: agent-repo
 
+      - name: Checkout target repository
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ inputs.repository }}
+          ref: ${{ inputs.commit_sha }}
+          token: ${{ secrets.repo_token }}
+          path: target-review-repo
+
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -81,6 +89,10 @@ jobs:
             echo "::error::Expected folder agent-repo/pr-review-agent was not found after checkout."
             exit 1
           fi
+          if [ ! -d "target-review-repo/.git" ]; then
+            echo "::error::Expected folder target-review-repo was not found after checkout."
+            exit 1
+          fi
 
       - name: Install dependencies
         working-directory: agent-repo/pr-review-agent
@@ -91,4 +103,13 @@ jobs:
       - name: Run PR review pipeline
         working-directory: agent-repo/pr-review-agent
         run: |
-          python app/main.py --repository "${{ inputs.repository }}" --pr-number "${{ inputs.pr_number }}"
+          python app/main.py --repository "${{ inputs.repository }}" --pr-number "${{ inputs.pr_number }}" --output-dir "${{ github.workspace }}/target-review-repo/pr-review-artifacts"
+
+      - name: Upload PR review artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-review-${{ inputs.pr_number }}
+          path: |
+            target-review-repo/pr-review-artifacts/Detailed_PR_Review_PR_${{ inputs.pr_number }}.docx
+            target-review-repo/pr-review-artifacts/Detailed_PR_Review_PR_${{ inputs.pr_number }}.json
+          if-no-files-found: error
