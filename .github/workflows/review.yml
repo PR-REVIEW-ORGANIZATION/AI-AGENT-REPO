@@ -23,19 +23,9 @@ on:
         description: Head commit SHA
         required: true
         type: string
-      agent_repository:
-        description: Repository containing this reusable workflow and agent code
-        required: false
-        type: string
-        default: PR-REVIEW-ORGANIZATION/AI-AGENT-REPO
-      agent_ref:
-        description: Git ref for the agent repository checkout
-        required: false
-        type: string
-        default: main
     secrets:
-      GH_TOKEN:
-        required: false
+      github_token:
+        required: true
       OPENAI_API_KEY:
         required: true
       LLM_API_URL:
@@ -50,23 +40,26 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      GH_TOKEN_VALUE: ${{ secrets.GH_TOKEN }}
+      github_token: ${{ secrets.github_token }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LLM_API_URL: ${{ secrets.LLM_API_URL }}
+      LLM_MODEL: ${{ secrets.LLM_MODEL }}
     steps:
-      - name: Checkout agent repository (with GH_TOKEN)
-        if: ${{ env.GH_TOKEN_VALUE != '' }}
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ inputs.agent_repository }}
-          ref: ${{ inputs.agent_ref }}
-          token: ${{ env.GH_TOKEN_VALUE }}
-          path: agent-repo
+      - name: Resolve reusable workflow source
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflow_ref="${{ github.workflow_ref }}"
+          echo "repository=${workflow_ref%%/.github/workflows/*}" >> "$GITHUB_OUTPUT"
+          echo "ref=${workflow_ref#*@}" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout agent repository (fallback token)
-        if: ${{ env.GH_TOKEN_VALUE == '' }}
+      - name: Checkout agent repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ inputs.agent_repository }}
-          ref: ${{ inputs.agent_ref }}
+          repository: ${{ steps.source.outputs.repository }}
+          ref: ${{ steps.source.outputs.ref }}
+          token: ${{ secrets.github_token }}
           path: agent-repo
 
       - name: Setup Python
@@ -74,26 +67,19 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Preflight validation
+      - name: Validate required environment variables
         shell: bash
         run: |
           set -euo pipefail
-          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
-            echo "OPENAI_API_KEY is empty or missing in target repository secrets."
-            exit 1
-          fi
-          if [ -z "${{ secrets.LLM_API_URL }}" ]; then
-            echo "LLM_API_URL is empty or missing in target repository secrets."
-            exit 1
-          fi
-          if [ -z "${{ secrets.LLM_MODEL }}" ]; then
-            echo "LLM_MODEL is empty or missing in target repository secrets."
-            exit 1
-          fi
+          required_vars=(github_token OPENAI_API_KEY LLM_API_URL LLM_MODEL)
+          for name in "${required_vars[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              echo "Required variable '$name' is missing or empty."
+              exit 1
+            fi
+          done
           if [ ! -d "agent-repo/pr-review-agent" ]; then
             echo "Expected folder agent-repo/pr-review-agent was not found after checkout."
-            echo "Checked out repository: ${{ inputs.agent_repository }} @ ${{ inputs.agent_ref }}"
-            ls -la agent-repo || true
             exit 1
           fi
 
@@ -105,24 +91,5 @@ jobs:
 
       - name: Run PR review pipeline
         working-directory: agent-repo/pr-review-agent
-        env:
-          github_token: ${{ env.GH_TOKEN_VALUE != '' && env.GH_TOKEN_VALUE || github.token }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LLM_API_URL: ${{ secrets.LLM_API_URL }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL }}
         run: |
-          python app/main.py \
-            --repository "${{ inputs.repository }}" \
-            --pr-number "${{ inputs.pr_number }}" \
-            --base-branch "${{ inputs.base_branch }}" \
-            --head-branch "${{ inputs.head_branch }}" \
-            --commit-sha "${{ inputs.commit_sha }}"
-
-      - name: Upload PR review artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: pr-review-${{ inputs.pr_number }}
-          path: |
-            agent-repo/pr-review-agent/outputs/Detailed_PR_Review_PR_${{ inputs.pr_number }}.docx
-            agent-repo/pr-review-agent/outputs/Detailed_PR_Review_PR_${{ inputs.pr_number }}.json
-          if-no-files-found: error
+          python app/main.py --repository "${{ inputs.repository }}" --pr-number "${{ inputs.pr_number }}"
