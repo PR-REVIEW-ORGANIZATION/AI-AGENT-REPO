@@ -24,7 +24,7 @@ on:
         required: true
         type: string
     secrets:
-      github_token:
+      repo_token:
         required: true
       OPENAI_API_KEY:
         required: true
@@ -40,7 +40,8 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      github_token: ${{ secrets.github_token }}
+      REPO_TOKEN: ${{ secrets.repo_token }}
+      GITHUB_TOKEN: ${{ secrets.repo_token }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       LLM_API_URL: ${{ secrets.LLM_API_URL }}
       LLM_MODEL: ${{ secrets.LLM_MODEL }}
@@ -59,7 +60,7 @@ jobs:
         with:
           repository: ${{ steps.source.outputs.repository }}
           ref: ${{ steps.source.outputs.ref }}
-          token: ${{ secrets.github_token }}
+          token: ${{ secrets.repo_token }}
           path: agent-repo
 
       - name: Setup Python
@@ -71,7 +72,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          required_vars=(github_token OPENAI_API_KEY LLM_API_URL LLM_MODEL)
+          required_vars=(REPO_TOKEN OPENAI_API_KEY LLM_API_URL LLM_MODEL)
           for name in "${required_vars[@]}"; do
             if [ -z "${!name:-}" ]; then
               echo "Required variable '$name' is missing or empty."
