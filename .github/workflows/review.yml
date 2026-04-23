@@ -23,14 +23,20 @@ on:
         description: Head commit SHA
         required: true
         type: string
+      llm_api_url:
+        description: LLM API base URL
+        required: false
+        type: string
+        default: https://genai-sharedservice-americas.pwc.com
+      llm_model:
+        description: LLM model name
+        required: false
+        type: string
+        default: azure.gpt-4o-mini
     secrets:
       repo_token:
         required: true
       OPENAI_API_KEY:
-        required: true
-      LLM_API_URL:
-        required: true
-      LLM_MODEL:
         required: true
 
 jobs:
@@ -44,8 +50,8 @@ jobs:
       REPO_TOKEN: ${{ secrets.repo_token }}
       GITHUB_TOKEN: ${{ secrets.repo_token }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      LLM_API_URL: ${{ secrets.LLM_API_URL }}
-      LLM_MODEL: ${{ secrets.LLM_MODEL }}
+      LLM_API_URL: ${{ inputs.llm_api_url }}
+      LLM_MODEL: ${{ inputs.llm_model }}
     steps:
       - name: Resolve reusable workflow source
         id: source
