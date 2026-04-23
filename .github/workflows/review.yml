@@ -40,6 +40,7 @@ jobs:
       contents: read
       pull-requests: read
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
       REPO_TOKEN: ${{ secrets.repo_token }}
       GITHUB_TOKEN: ${{ secrets.repo_token }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -56,7 +57,7 @@ jobs:
           echo "ref=${workflow_ref#*@}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout agent repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ steps.source.outputs.repository }}
           ref: ${{ steps.source.outputs.ref }}
@@ -64,7 +65,7 @@ jobs:
           path: agent-repo
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -75,12 +76,12 @@ jobs:
           required_vars=(REPO_TOKEN OPENAI_API_KEY LLM_API_URL LLM_MODEL)
           for name in "${required_vars[@]}"; do
             if [ -z "${!name:-}" ]; then
-              echo "Required variable '$name' is missing or empty."
+              echo "::error::Required variable '$name' is missing or empty."
               exit 1
             fi
           done
           if [ ! -d "agent-repo/pr-review-agent" ]; then
-            echo "Expected folder agent-repo/pr-review-agent was not found after checkout."
+            echo "::error::Expected folder agent-repo/pr-review-agent was not found after checkout."
             exit 1
           fi
 
