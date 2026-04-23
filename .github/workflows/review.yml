@@ -53,20 +53,11 @@ jobs:
       LLM_API_URL: ${{ inputs.llm_api_url }}
       LLM_MODEL: ${{ inputs.llm_model }}
     steps:
-      - name: Resolve reusable workflow source
-        id: source
-        shell: bash
-        run: |
-          set -euo pipefail
-          workflow_ref="${{ github.workflow_ref }}"
-          echo "repository=${workflow_ref%%/.github/workflows/*}" >> "$GITHUB_OUTPUT"
-          echo "ref=${workflow_ref#*@}" >> "$GITHUB_OUTPUT"
-
       - name: Checkout agent repository
         uses: actions/checkout@v6
         with:
-          repository: ${{ steps.source.outputs.repository }}
-          ref: ${{ steps.source.outputs.ref }}
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
           token: ${{ secrets.repo_token }}
           path: agent-repo
 
