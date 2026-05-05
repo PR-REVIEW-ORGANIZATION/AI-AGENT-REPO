@@ -19,6 +19,10 @@ class AppConfig:
     openai_api_key: str
     llm_api_url: str
     llm_model: str
+    post_pr_summary_comment: bool
+    post_inline_comments: bool
+    fail_on_comment_error: bool
+    max_inline_comments: int
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "AppConfig":
@@ -28,6 +32,10 @@ class AppConfig:
         openai_api_key = (source.get("OPENAI_API_KEY") or "").strip()
         llm_api_url = (source.get("LLM_API_URL") or "").strip()
         llm_model = (source.get("LLM_MODEL") or "").strip()
+        post_pr_summary_comment = _parse_bool(source.get("POST_PR_SUMMARY_COMMENT"), default=True)
+        post_inline_comments = _parse_bool(source.get("POST_INLINE_COMMENTS"), default=False)
+        fail_on_comment_error = _parse_bool(source.get("FAIL_ON_COMMENT_ERROR"), default=False)
+        max_inline_comments = _parse_positive_int(source.get("MAX_INLINE_COMMENTS"), default=5)
 
         missing: list[str] = []
         if not github_token:
@@ -47,4 +55,29 @@ class AppConfig:
             openai_api_key=openai_api_key,
             llm_api_url=llm_api_url,
             llm_model=llm_model,
+            post_pr_summary_comment=post_pr_summary_comment,
+            post_inline_comments=post_inline_comments,
+            fail_on_comment_error=fail_on_comment_error,
+            max_inline_comments=max_inline_comments,
         )
+
+
+def _parse_bool(value: str | None, default: bool) -> bool:
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "y", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "n", "off"}:
+        return False
+    return default
+
+
+def _parse_positive_int(value: str | None, default: int) -> int:
+    if value is None:
+        return default
+    try:
+        parsed = int(value)
+    except ValueError:
+        return default
+    return parsed if parsed > 0 else default

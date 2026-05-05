@@ -186,6 +186,63 @@ class GitHubClient:
 
         return None
 
+    def list_issue_comments(self, repository: str, issue_number: int) -> list[dict]:
+        """List issue comments for a pull request (PR number == issue number)."""
+        data = self._request_paginated(f"/repos/{repository}/issues/{issue_number}/comments")
+        return [item for item in data if isinstance(item, dict)]
+
+    def create_issue_comment(self, repository: str, issue_number: int, body: str) -> dict:
+        """Create a top-level issue/PR comment."""
+        payload = {"body": body}
+        response = self._request(
+            "POST",
+            f"/repos/{repository}/issues/{issue_number}/comments",
+            json_payload=payload,
+            expected_status={201},
+        )
+        return response.json()
+
+    def update_issue_comment(self, repository: str, comment_id: int, body: str) -> dict:
+        """Update an existing issue/PR comment."""
+        payload = {"body": body}
+        response = self._request(
+            "PATCH",
+            f"/repos/{repository}/issues/comments/{comment_id}",
+            json_payload=payload,
+            expected_status={200},
+        )
+        return response.json()
+
+    def create_pr_inline_comment(
+        self,
+        repository: str,
+        pr_number: int,
+        commit_sha: str,
+        path: str,
+        line: int,
+        body: str,
+    ) -> dict:
+        """Create a PR inline review comment on the RIGHT side of the diff."""
+        payload = {
+            "body": body,
+            "commit_id": commit_sha,
+            "path": path,
+            "line": line,
+            "side": "RIGHT",
+        }
+        response = self._request(
+            "POST",
+            f"/repos/{repository}/pulls/{pr_number}/comments",
+            json_payload=payload,
+            expected_status={201},
+        )
+        return response.json()
+
+    def list_pr_inline_comments(self, repository: str, pr_number: int) -> list[dict]:
+        """List existing PR inline review comments."""
+        data = self._request_paginated(f"/repos/{repository}/pulls/{pr_number}/comments")
+        return [item for item in data if isinstance(item, dict)]
+
     def _request_paginated(self, path: str, params: dict[str, object] | None = None) -> list[dict]:
         all_items: list[dict] = []
         page = 1
@@ -221,11 +278,18 @@ class GitHubClient:
         method: str,
         path: str,
         params: dict[str, object] | None = None,
+        json_payload: dict[str, object] | None = None,
         expected_status: int | set[int] = 200,
         absolute: bool = False,
     ) -> requests.Response:
         url = path if absolute else f"{self.base_url}{path}"
-        response = self.session.request(method, url, params=params, timeout=self.timeout_seconds)
+        response = self.session.request(
+            method,
+            url,
+            params=params,
+            json=json_payload,
+            timeout=self.timeout_seconds,
+        )
         expected = expected_status if isinstance(expected_status, set) else {expected_status}
         if response.status_code not in expected:
             body_preview = response.text[:400].replace("\n", " ")

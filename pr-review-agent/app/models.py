@@ -9,6 +9,7 @@ VALID_SEVERITIES = {"low", "medium", "high"}
 VALID_RISK_LEVELS = {"Low", "Medium", "High"}
 VALID_DECISIONS = {"Merge", "Do Not Merge"}
 VALID_CONFIDENCE = {"low", "medium", "high"}
+VALID_TITLE_LEVELS = {"Low", "Medium", "High"}
 
 
 def _to_string_list(value: Any) -> list[str]:
@@ -184,6 +185,45 @@ class FileReview:
 
 
 @dataclass
+class InlineComment:
+    """Candidate inline review comment tied to a changed PR line."""
+
+    path: str
+    line: int
+    body: str
+    severity: str
+    confidence: str
+
+    def __post_init__(self) -> None:
+        self.path = self.path.strip()
+        if not self.path:
+            raise ValueError("Inline comment path must not be empty")
+        try:
+            self.line = int(self.line)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Inline comment line must be an integer") from exc
+        if self.line <= 0:
+            raise ValueError("Inline comment line must be positive")
+        self.body = self.body.strip()
+        if not self.body:
+            raise ValueError("Inline comment body must not be empty")
+        self.severity = self.severity.strip().title()
+        self.confidence = self.confidence.strip().title()
+        if self.severity not in VALID_TITLE_LEVELS:
+            raise ValueError(f"Invalid inline comment severity: {self.severity}")
+        if self.confidence not in VALID_TITLE_LEVELS:
+            raise ValueError(f"Invalid inline comment confidence: {self.confidence}")
+
+    @property
+    def is_eligible(self) -> bool:
+        """Return True when this comment is eligible for inline posting."""
+        return self.severity in {"Medium", "High"} and self.confidence == "High"
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
 class FinalReview:
     """Final, PR-level synthesized review."""
 
@@ -204,6 +244,7 @@ class FinalReview:
     implementation_changes: list[str] = field(default_factory=list)
     real_issues_only: list[str] = field(default_factory=list)
     final_recommendation: str = ""
+    inline_comments: list[InlineComment] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.summary_of_changes = _to_string_list(self.summary_of_changes)
@@ -214,6 +255,7 @@ class FinalReview:
         self.core_logic_changes = _to_string_list(self.core_logic_changes)
         self.implementation_changes = _to_string_list(self.implementation_changes)
         self.real_issues_only = _to_string_list(self.real_issues_only)
+        self.inline_comments = _to_inline_comments(self.inline_comments)
         self.risk_level = self.risk_level.strip().title()
         if self.risk_level not in VALID_RISK_LEVELS:
             raise ValueError(f"Invalid risk level: {self.risk_level}")
@@ -242,6 +284,7 @@ class FinalReview:
             "risk_level": self.risk_level,
             "real_issues_only": list(self.real_issues_only),
             "final_recommendation": self.final_recommendation,
+            "inline_comments": [comment.to_dict() for comment in self.inline_comments],
             "key_issues": [issue.to_dict() for issue in self.key_issues],
             "behavior_changes": list(self.behavior_changes),
             "final_decision": self.final_decision,
@@ -250,3 +293,33 @@ class FinalReview:
             "scope_of_review": self.scope_of_review,
             "files_changed_summary": list(self.files_changed_summary),
         }
+
+
+def _to_inline_comments(value: Any) -> list[InlineComment]:
+    """Normalize unknown comment payloads into typed inline comment objects."""
+    if value is None:
+        return []
+    if isinstance(value, InlineComment):
+        return [value]
+    if isinstance(value, list):
+        comments: list[InlineComment] = []
+        for item in value:
+            if isinstance(item, InlineComment):
+                comments.append(item)
+                continue
+            if not isinstance(item, dict):
+                continue
+            try:
+                comments.append(
+                    InlineComment(
+                        path=str(item.get("path") or "").strip(),
+                        line=int(item.get("line") or 0),
+                        body=str(item.get("body") or "").strip(),
+                        severity=str(item.get("severity") or "").strip().title() or "Low",
+                        confidence=str(item.get("confidence") or "").strip().title() or "Low",
+                    )
+                )
+            except (TypeError, ValueError):
+                continue
+        return comments
+    return []

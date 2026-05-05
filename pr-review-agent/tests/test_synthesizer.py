@@ -107,3 +107,39 @@ def test_risky_path_only_does_not_force_high_risk() -> None:
     )
     risk = determine_risk_level(prechecks, [])
     assert risk == "Low"
+
+
+def test_build_fallback_review_collects_inline_comment_candidates() -> None:
+    metadata = _sample_metadata()
+    changed_files = [
+        ChangedFile(
+            filename="src/auth/service.py",
+            status="modified",
+            additions=3,
+            deletions=1,
+            changes=4,
+            patch="@@ -10,2 +10,3 @@\n old\n+new\n old2\n",
+        )
+    ]
+    prechecks = PrecheckResult()
+    file_reviews = [
+        FileReview(
+            filename="src/auth/service.py",
+            facts=["Validation path updated."],
+            confidence="high",
+            issues=[
+                FileIssue(
+                    severity="high",
+                    category="logic",
+                    description="Missing error handling when token parsing fails.",
+                    recommendation="Return an explicit auth failure response.",
+                    line=11,
+                )
+            ],
+        )
+    ]
+
+    final_review = build_fallback_review(metadata, changed_files, prechecks, file_reviews)
+    assert len(final_review.inline_comments) == 1
+    assert final_review.inline_comments[0].path == "src/auth/service.py"
+    assert final_review.inline_comments[0].line == 11

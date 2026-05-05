@@ -11,6 +11,7 @@ from app.models import (
     FileIssue,
     FileReview,
     FinalReview,
+    InlineComment,
     PRMetadata,
     PrecheckResult,
 )
@@ -83,6 +84,7 @@ def build_fallback_review(
         implementation_changes=implementation_changes,
     )
     real_issues_only = collect_real_issues_only(prechecks, key_issues)
+    inline_comments = collect_inline_comment_candidates(file_reviews)
     business_context = derive_business_context(pr_metadata, purpose_of_pr)
     scope_of_review = build_scope_statement(changed_files, prechecks, file_reviews)
     files_changed_summary = summarize_files(changed_files, include_counts=True)
@@ -112,6 +114,7 @@ def build_fallback_review(
         implementation_changes=implementation_changes,
         real_issues_only=real_issues_only,
         final_recommendation=final_decision,
+        inline_comments=inline_comments,
     )
 
 
@@ -283,6 +286,7 @@ def _merge_llm_output(fallback: FinalReview, llm_output: dict) -> FinalReview:
         implementation_changes=implementation_changes,
         real_issues_only=real_issues_only,
         final_recommendation=final_decision,
+        inline_comments=fallback.inline_comments,
     )
 
 
@@ -446,3 +450,44 @@ def _ensure_sentence(text: str) -> str:
 def _is_low_signal_fact(fact: str) -> bool:
     normalized = fact.strip().lower()
     return any(normalized.startswith(prefix) for prefix in _LOW_SIGNAL_FACT_PREFIXES)
+
+
+def collect_inline_comment_candidates(file_reviews: list[FileReview]) -> list[InlineComment]:
+    """Extract actionable inline comment candidates from file-level findings."""
+    comments: list[InlineComment] = []
+    seen: set[tuple[str, int, str]] = set()
+
+    for review in file_reviews:
+        confidence = review.confidence.strip().title()
+        for issue in review.issues:
+            if issue.line is None or issue.line <= 0:
+                continue
+            body = _build_inline_comment_body(issue)
+            try:
+                comment = InlineComment(
+                    path=review.filename,
+                    line=issue.line,
+                    body=body,
+                    severity=issue.severity.title(),
+                    confidence=confidence,
+                )
+            except ValueError:
+                continue
+            if not comment.is_eligible:
+                continue
+            key = (comment.path, comment.line, comment.body.lower())
+            if key in seen:
+                continue
+            seen.add(key)
+            comments.append(comment)
+
+    return comments
+
+
+def _build_inline_comment_body(issue: FileIssue) -> str:
+    """Build concise actionable inline feedback from issue data."""
+    description = issue.description.strip()
+    recommendation = issue.recommendation.strip()
+    if recommendation and recommendation.lower() not in description.lower():
+        return f"{description} {recommendation}".strip()
+    return description

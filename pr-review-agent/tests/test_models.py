@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.models import FileIssue, FileReview, FinalReview
+from app.models import FileIssue, FileReview, FinalReview, InlineComment
 
 
 def test_file_issue_rejects_invalid_severity() -> None:
@@ -43,3 +43,22 @@ def test_final_review_validates_risk_level() -> None:
             scope_of_review="scope",
             files_changed_summary=["file"],
         )
+
+
+def test_inline_comment_eligibility_rule() -> None:
+    eligible = InlineComment(
+        path="src/app.py",
+        line=14,
+        body="Validate payload schema before using fields.",
+        severity="High",
+        confidence="High",
+    )
+    ineligible = InlineComment(
+        path="src/app.py",
+        line=15,
+        body="Consider renaming this variable.",
+        severity="Low",
+        confidence="High",
+    )
+    assert eligible.is_eligible is True
+    assert ineligible.is_eligible is False

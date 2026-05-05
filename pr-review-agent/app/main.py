@@ -15,6 +15,7 @@ from app.config import AppConfig
 from app.doc_writer import write_review_docx, write_review_json
 from app.github_api import GitHubClient
 from app.prechecks import run_prechecks
+from app.pr_commenter import publish_pr_comments
 from app.synthesizer import synthesize_pr_review
 
 LOGGER = logging.getLogger("pr-review-agent")
@@ -128,6 +129,35 @@ def main() -> int:
 
     print(f"DOCX artifact generated: {docx_path}")
     print(f"JSON artifact generated: {json_path}")
+
+    if config.post_pr_summary_comment or config.post_inline_comments:
+        LOGGER.info("Publishing PR comments")
+        try:
+            comment_result = publish_pr_comments(
+                github_client=github_client,
+                repository=args.repository,
+                pr_number=args.pr_number,
+                metadata=metadata,
+                changed_files=changed_files,
+                final_review=final_review,
+                file_reviews=file_reviews,
+                post_summary_comment=config.post_pr_summary_comment,
+                post_inline_comments=config.post_inline_comments,
+                fail_on_comment_error=config.fail_on_comment_error,
+                max_inline_comments=config.max_inline_comments,
+            )
+            LOGGER.info(
+                "PR comment result: summary=%s inline_posted=%s inline_candidates=%s inline_skipped=%s",
+                comment_result.summary_action,
+                comment_result.inline_posted,
+                comment_result.inline_candidates,
+                comment_result.inline_skipped,
+            )
+        except Exception:
+            LOGGER.exception("PR commenting step failed.")
+            if config.fail_on_comment_error:
+                return 2
+
     return 0
 
 

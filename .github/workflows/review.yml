@@ -44,7 +44,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
+      issues: write
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
       REPO_TOKEN: ${{ secrets.repo_token }}
@@ -52,6 +53,10 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       LLM_API_URL: ${{ inputs.llm_api_url }}
       LLM_MODEL: ${{ inputs.llm_model }}
+      POST_PR_SUMMARY_COMMENT: "true"
+      POST_INLINE_COMMENTS: "false"
+      FAIL_ON_COMMENT_ERROR: "false"
+      MAX_INLINE_COMMENTS: "5"
     steps:
       - name: Checkout agent repository
         uses: actions/checkout@v6
