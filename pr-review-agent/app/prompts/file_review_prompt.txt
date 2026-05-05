@@ -21,9 +21,19 @@ Head content excerpt:
 {head_content}
 
 Task:
-- Evaluate correctness, logic issues, regressions, security risks, edge cases, test gaps, and maintainability.
-- Keep output short and precise.
-- Do not speculate beyond provided evidence.
+- Prioritize in this order:
+  1) Functional / behavior change
+  2) Purpose / intent of the change
+  3) Core logic changes
+  4) Implementation details
+- Focus on behavior change first, implementation second.
+- Summarize like a human reviewer, not a linter.
+- Treat intentional modifications as intended unless evidence shows a defect.
+- Do not overstate risk. Do not speculate beyond provided evidence.
+- Keep output short, PR-specific, and factual.
+- `facts` must describe what changed in behavior or functionality before low-level details.
+- `risks` and `issues` must include only real, evidence-backed concerns.
+- If no concrete defect is observed, return empty `issues` and minimal `risks`.
 
 Return JSON with exactly this schema:
 {{

@@ -197,27 +197,51 @@ class FinalReview:
     business_functional_context: str
     scope_of_review: str
     files_changed_summary: list[str]
+    purpose_of_pr: str = ""
+    behavior_before: list[str] = field(default_factory=list)
+    behavior_after: list[str] = field(default_factory=list)
+    core_logic_changes: list[str] = field(default_factory=list)
+    implementation_changes: list[str] = field(default_factory=list)
+    real_issues_only: list[str] = field(default_factory=list)
+    final_recommendation: str = ""
 
     def __post_init__(self) -> None:
         self.summary_of_changes = _to_string_list(self.summary_of_changes)
         self.behavior_changes = _to_string_list(self.behavior_changes)
         self.files_changed_summary = _to_string_list(self.files_changed_summary)
+        self.behavior_before = _to_string_list(self.behavior_before)
+        self.behavior_after = _to_string_list(self.behavior_after)
+        self.core_logic_changes = _to_string_list(self.core_logic_changes)
+        self.implementation_changes = _to_string_list(self.implementation_changes)
+        self.real_issues_only = _to_string_list(self.real_issues_only)
         self.risk_level = self.risk_level.strip().title()
         if self.risk_level not in VALID_RISK_LEVELS:
             raise ValueError(f"Invalid risk level: {self.risk_level}")
         self.final_decision = self.final_decision.strip()
         if self.final_decision not in VALID_DECISIONS:
             raise ValueError(f"Invalid final decision: {self.final_decision}")
+        recommendation = self.final_recommendation.strip()
+        if recommendation not in VALID_DECISIONS:
+            recommendation = self.final_decision
         self.executive_summary = self.executive_summary.strip()
         self.reasoning = self.reasoning.strip()
         self.business_functional_context = self.business_functional_context.strip()
         self.scope_of_review = self.scope_of_review.strip()
+        self.purpose_of_pr = self.purpose_of_pr.strip() or self.business_functional_context
+        self.final_recommendation = recommendation
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "executive_summary": self.executive_summary,
+            "purpose_of_pr": self.purpose_of_pr,
             "summary_of_changes": list(self.summary_of_changes),
+            "behavior_before": list(self.behavior_before),
+            "behavior_after": list(self.behavior_after),
+            "core_logic_changes": list(self.core_logic_changes),
+            "implementation_changes": list(self.implementation_changes),
             "risk_level": self.risk_level,
+            "real_issues_only": list(self.real_issues_only),
+            "final_recommendation": self.final_recommendation,
             "key_issues": [issue.to_dict() for issue in self.key_issues],
             "behavior_changes": list(self.behavior_changes),
             "final_decision": self.final_decision,

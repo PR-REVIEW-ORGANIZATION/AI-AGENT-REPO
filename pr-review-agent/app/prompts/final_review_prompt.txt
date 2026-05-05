@@ -5,19 +5,30 @@ Context:
 
 Rules:
 - Use only evidence from context.
-- Keep output concise and implementation-focused.
-- Separate confirmed change summary from risk statements.
-- If context lacks business detail, say so explicitly.
+- Prioritize in this order:
+  1) Functional / behavior change (most important)
+  2) Purpose / intent
+  3) Core logic changes
+  4) Implementation details
+- Focus on behavior change first, implementation second.
+- Summarize like a human reviewer, not a linter.
+- Always describe before vs after behavior.
+- Do not overstate risk.
+- Do not treat intentional modifications as defects.
+- Include only real, evidence-backed issues.
+- Keep output concise, specific to this PR, and factual.
+- If context lacks business detail, state that explicitly.
 - Output valid JSON only.
 
-Return JSON with this schema:
+Return JSON with exactly this schema:
 {{
-  "executive_summary": "string",
+  "purpose_of_pr": "string",
   "summary_of_changes": ["string"],
+  "behavior_before": ["string"],
+  "behavior_after": ["string"],
+  "core_logic_changes": ["string"],
+  "implementation_changes": ["string"],
   "risk_level": "Low|Medium|High",
-  "behavior_changes": ["string"],
-  "business_functional_context": "string",
-  "scope_of_review": "string",
-  "final_decision": "Merge|Do Not Merge",
-  "reasoning": "string"
+  "real_issues_only": ["string"],
+  "final_recommendation": "Merge|Do Not Merge"
 }}

@@ -85,4 +85,25 @@ def test_build_fallback_review_populates_required_fields() -> None:
     assert final_review.executive_summary
     assert final_review.business_functional_context
     assert final_review.scope_of_review
-    assert final_review.final_decision == "Do Not Merge"
+    assert final_review.purpose_of_pr
+    assert final_review.behavior_before
+    assert final_review.behavior_after
+    assert final_review.core_logic_changes
+    assert final_review.implementation_changes
+    assert final_review.final_recommendation in {"Merge", "Do Not Merge"}
+    assert final_review.final_decision == "Merge"
+
+
+def test_risky_path_only_does_not_force_high_risk() -> None:
+    prechecks = PrecheckResult(
+        issues=[
+            PrecheckIssue(
+                code="risky_file_path",
+                severity="high",
+                message="auth file",
+                filename="src/auth/service.py",
+            )
+        ]
+    )
+    risk = determine_risk_level(prechecks, [])
+    assert risk == "Low"
