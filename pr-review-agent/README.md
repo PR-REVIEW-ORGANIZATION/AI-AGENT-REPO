@@ -122,7 +122,7 @@ Connection steps:
 name: AI PR Review
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -130,7 +130,8 @@ jobs:
     uses: PR-REVIEW-ORGANIZATION/AI-AGENT-REPO/.github/workflows/review.yml@main
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
+      issues: write
     with:
       repository: ${{ github.repository }}
       pr_number: ${{ github.event.pull_request.number }}
@@ -140,7 +141,7 @@ jobs:
       agent_repository: PR-REVIEW-ORGANIZATION/AI-AGENT-REPO
       agent_ref: main
     secrets:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      repo_token: ${{ github.token }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       LLM_API_URL: ${{ secrets.LLM_API_URL }}
       LLM_MODEL: ${{ secrets.LLM_MODEL }}

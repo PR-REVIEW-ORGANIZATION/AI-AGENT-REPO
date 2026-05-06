@@ -12,6 +12,10 @@ permissions:
 jobs:
   review:
     uses: ./.github/workflows/review.yml
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     with:
       repository: ${{ github.repository }}
       pr_number: ${{ github.event.pull_request.number }}
