@@ -23,5 +23,5 @@ jobs:
       head_branch: ${{ github.event.pull_request.head.ref }}
       commit_sha: ${{ github.event.pull_request.head.sha }}
     secrets:
-      repo_token: ${{ github.token }}
+      repo_token: ${{ secrets.GITHUB_TOKEN }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

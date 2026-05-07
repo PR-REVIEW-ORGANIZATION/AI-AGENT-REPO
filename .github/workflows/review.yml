@@ -48,8 +48,8 @@ jobs:
       issues: write
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-      REPO_TOKEN: ${{ secrets.repo_token }}
-      GITHUB_TOKEN: ${{ secrets.repo_token }}
+      REPO_TOKEN: ${{ secrets.repo_token || github.token }}
+      GITHUB_TOKEN: ${{ secrets.repo_token || github.token }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       LLM_API_URL: ${{ inputs.llm_api_url }}
       LLM_MODEL: ${{ inputs.llm_model }}
@@ -63,7 +63,7 @@ jobs:
         with:
           repository: ${{ job.workflow_repository }}
           ref: ${{ job.workflow_sha }}
-          token: ${{ secrets.repo_token }}
+          token: ${{ secrets.repo_token || github.token }}
           path: agent-repo
 
       - name: Checkout target repository
@@ -71,7 +71,7 @@ jobs:
         with:
           repository: ${{ inputs.repository }}
           ref: ${{ inputs.commit_sha }}
-          token: ${{ secrets.repo_token }}
+          token: ${{ secrets.repo_token || github.token }}
           path: target-review-repo
 
       - name: Setup Python
